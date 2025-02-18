@@ -2,11 +2,23 @@ from collections import Counter
 from dataclasses import dataclass, field
 from typing import Optional, Dict
 from queue import PriorityQueue
-from itertools import islice
+import math
 
 from GenerateMegaTextFile import deserializeAverageCode, serializeAverageCode, generateMegaText
 
-#Dataclass automatically creates biolerplate code for fields
+#Main average code generation (is run once to create serialized average code)
+def generateAverageCode():
+    MEGA_TEXT_PATH = "mega_text.txt"
+    
+    #Generate mega text file
+    generateMegaText()
+    
+    #Generate the average code from mega text and save
+    _, _, codeMega = runCompression(MEGA_TEXT_PATH)
+    serializeAverageCode(codeMega)
+    
+
+#Python dataclass automatically creates biolerplate code for fields
 @dataclass(order=True)
 class TreeVertex:
     weight: int
@@ -14,7 +26,7 @@ class TreeVertex:
     leftChild: Optional['TreeVertex'] = field(compare=False, default=None)
     rightChild: Optional['TreeVertex'] = field(compare=False, default=None)
 
-    
+
 def readBook(path):
     f = open(path, "r", encoding="utf8")
     return f.read() 
@@ -22,11 +34,7 @@ def readBook(path):
 def countLetterFrequencies(text):    
     #Create dictionary of characters to their frequencies
     count = dict(Counter(text))
-    if len(count) > 500:
-        print(str(dict(islice(dict(sorted(count.items(), key=lambda x: x[1], reverse=True)).items(), 500))) + "\n")
-    else:
-        print(str(dict(sorted(count.items(), key=lambda x: x[1], reverse=True))) + "\n")
-    return (count)
+    return count
     
 def buildTree(freqs):
     pq = PriorityQueue()
@@ -74,9 +82,13 @@ def createCodeMap(freqs):
     traverseTree(root, "")
     return huffmanCode
 
+def computeMinBitLength(text):
+    #Is just ceiling of log_2(#distinct characters)
+    charCount = len(set(text))
+    return math.ceil(math.log2(charCount))
 
 #Main running code
-def runCompression(path, code = None):
+def runCompression(path, code = None, minFixedBits = False, returnCode = False):
     codeGiven = bool(code) #None means false -> no code given
     
     text = readBook(path)
@@ -85,57 +97,20 @@ def runCompression(path, code = None):
     if not codeGiven:
         freqs = countLetterFrequencies(text)
         code = createCodeMap(freqs)
-
-    if len(code) > 500:
-        print(str(dict(islice(code.items(), 500))) + "\n")
-    else:
-        print(str(code) + "\n")
         
-    #Fixed bits is just 
-    fixedBits = len(text) * 8
+    textBits = 0
+    #If fixed bit return is needed, compute minimum fixed bit length and multiply by number of characters, else blocks of 8
+    if minFixedBits:
+        minBitLength = computeMinBitLength(text)
+        textBits = len(text) * minBitLength
+    else:
+        textBits = len(text)*8
 
     #Encode text with code
     huffmanCompressed = "".join(code[char] for char in text if char in code)
     huffmanBits = len(huffmanCompressed) 
 
-    if not codeGiven:
-        return fixedBits, huffmanBits, code
-    return fixedBits, huffmanBits
-
-#Display results of Huffman coding
-def displayHuffmanStats(fixedBits, huffmanBits):
-    print("Fixed-length encded: " + str(fixedBits))
-    print("Huffman encoded: " + str(huffmanBits))
-    #Calculate difference of fixed length and huffman encoded
-    print("Bits saved: " + str(fixedBits - huffmanBits))
-    print("")
-
-
-#Main average code generation (is run once)
-def generateAverageCode():
-    MEGA_TEXT_PATH = "mega_text.txt"
-    
-    #Generate mega text file
-##    generateMegaText()
-    
-    #Generate the average code from mega text and save
-    _, _, codeMega = runCompression(MEGA_TEXT_PATH)
-    serializeAverageCode(codeMega)
-
-##generateAverageCode()
-
-#Test path for text
-TEXT_PATH = "Roosevelt_History.txt"
-
-#Test 1: Text-specific encoding
-fixedBitsRegular, huffmanBitsRegular, codeRegular = runCompression(TEXT_PATH)
-displayHuffmanStats(fixedBitsRegular, huffmanBitsRegular)
-
-#Test 2: Average encoding
-codeAverage = deserializeAverageCode()
-fixedBitsAverage, huffmanBitsAverage = runCompression(TEXT_PATH, code = codeAverage)
-displayHuffmanStats(fixedBitsAverage, huffmanBitsAverage)
-
+    return (textBits, huffmanBits, code) if returnCode else (textBits, huffmanBits)
 
 
 
