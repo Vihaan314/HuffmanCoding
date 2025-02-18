@@ -1,3 +1,15 @@
+##Question 1:
+# Replace each character with its corresponding bit sequence in the Huffman code map, and then count the total number of bits with the runCompression method
+# This gives 1778603 bits.
+
+##Question 2:
+# The idea is to consider how many characters we can represent with $x$ bits. Since each bit has two choices, the total number is $2^x$. 
+# Now, suppose we have $n$ distinct characters in our text; to ensure a unique representation for each character, we must solve $n \geq 2^{x}$, 
+# which gives us $x = \lceil\log_2{n}\rceil$. Hence, $\mathbf{\lceil\log_2{n}\rceil}$ is the minimum bit-length for encoding $n$ characters. 
+# We just multiply this by the number of characters to give us $2806636$ bits to encode the example text file. 
+# Therefore, we save $2806636 - 1778603 = \mathbf{1028033}$ bits. That is $\mathbf{36.6\%}$ space saved.
+
+
 from collections import Counter
 from dataclasses import dataclass, field
 from typing import Optional, Dict
